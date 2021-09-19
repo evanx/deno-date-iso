@@ -20,6 +20,8 @@ The `service` script is an experimental Redis-driven microservice approach.
 
 ## cli
 
+![image](https://user-images.githubusercontent.com/899558/133926057-af3cb1b3-229e-4dff-9a50-2767b300b526.png)
+
 The `cli` script is used to test the `service` e.g.:
 
 - `create` the stream with `service` consumer group
