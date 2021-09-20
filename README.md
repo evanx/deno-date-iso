@@ -14,33 +14,33 @@ Intended to be used to test a process runner e.g.:
 deno run https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.1/main.ts
 ```
 
-## service
+## worker
 
-The `service` script is an experimental Redis-driven microservice approach:
+The `worker` script is an experimental Redis-driven microservice approach:
 
 - the microservice requires a Redis "worker key" as a CLI parameter
 - the worker hashes provide configuration e.g. the `requestStream` key
 - the worker sets and monitors the `pid` field to control its lifecycle
-- the worker will `xreadgroup` using the `service` consumer group to processes requests
+- the worker will `xreadgroup` using the `worker` consumer group to processes requests
 - the worker will push the response to a single-entry "list" which will expire after a few seconds
 
-The intention is that other services can `xadd` requests, and `brpop` responses with a timeout.
+The intention is that other workers can `xadd` requests, and `brpop` responses with a timeout.
 
-Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.2/service.ts
+Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.3/worker.ts
 
 ### cli
 
 ![image](https://user-images.githubusercontent.com/899558/133970523-30f71676-6bb6-421c-84db-c936ba968019.png)
 
-The `cli` script is used to test the `service` e.g.:
+The `cli` script can be used to setup and test a `worker` e.g.:
 
-- `create-request-stream` - create the stream with `service` consumer group
-- `setup-worker` - setup a worker instance
+- `create-request-stream` - create the stream with `worker` consumer group
+- `setup-worker` - setup a worker hashes key
 - `xadd-request` - add a request to the stream
 
 ### demo
 
-The `demo.sh` shell script can be used to demonstrate the `service` script e.g. if you wish to delete the request stream if it already exists:
+The `demo.sh` shell script can be used to demonstrate the `worker` script e.g. if you wish to delete the request stream if it already exists:
 
 ```shell
 ./demo.sh clear
@@ -50,7 +50,7 @@ The `demo.sh` shell script can be used to demonstrate the `service` script e.g. 
 
 This script will:
 
-- create the request stream with a consumer group `service` for collaborating workers to consume via `xreadgroup`
+- create the request stream with a consumer group `worker` for collaborating workers to consume via `xreadgroup`
 - `xadd` a request to the stream
 - setup a worker key `deno-date-iso:1:h`
 - run the worker to process the added request

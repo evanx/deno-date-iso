@@ -7,7 +7,7 @@ const commands = [
   { key: "info", description: "Show info on the request stream", args: [] },
   {
     key: "show-default-setup",
-    description: "Show the default service configuration",
+    description: "Show the default worker setup",
     args: [],
   },
   {
@@ -57,14 +57,20 @@ const commands = [
   },
 ];
 
-const serviceUrl = "https://github.com/evanx/deno-date-iso/service.ts";
-const serviceVersion = "0.0.1";
-const servicePrefix = "deno-date-iso";
-const requestStreamKey = `${servicePrefix}:req:x`;
-const responseStreamKey = `${servicePrefix}:res:x`;
+const workerClass = "deno-date-iso";
+const workerRepo = "https://raw.githubusercontent.com/evanx/";
+if (!workerRepo.endsWith("/")) {
+  throw new Error(`Expecting WORKER_REPO to end with slash: ${workerRepo}`);
+}
+const workerVersion = "0.0.1";
+const workerUrl = workerRepo + workerClass + "/worker.ts";
+const requestStreamKey = `${workerClass}:req:x`;
+const responseStreamKey = `${workerClass}:res:x`;
 
 console.log(
-  `Stream: ${Colors.blue(requestStreamKey)}, command: ${Deno.args.join(" ")}`,
+  `Stream: ${Colors.blue(requestStreamKey)}, command: ${
+    Deno.args.length ? Deno.args.join(" ") : "info"
+  }`,
 );
 
 const redis = await connect({
@@ -90,7 +96,7 @@ if (Deno.args.length === 0) {
         "xgroup",
         "create",
         requestStreamKey,
-        "service",
+        "worker",
         "0",
         "mkstream",
       );
@@ -108,10 +114,10 @@ if (Deno.args.length === 0) {
   } else if (command === "xtrim-response") {
     console.error(`Provide arg: <maxlen>`);
   } else if (command === "xadd-request") {
-    console.error(`Provide arg: <id>`);
+    console.error(`Provide arg: <ref>`);
   } else if (command === "xrange-request") {
     const xrangeReply = await redis.xrange(
-      `${servicePrefix}:req:x`,
+      `${workerClass}:req:x`,
       "-",
       "+",
       99,
@@ -151,11 +157,11 @@ if (Deno.args.length === 0) {
   const command = Deno.args[0];
   const arg = Deno.args[1];
   if (command === "setup-worker") {
-    const workerKey = `${servicePrefix}:${arg}:h`;
+    const workerKey = `${workerClass}:${arg}:h`;
     await redis.del(workerKey);
-    await redis.hmset(workerKey, ["service", serviceUrl], [
-      "version",
-      serviceVersion,
+    await redis.hmset(workerKey, ["workerUrl", workerUrl], [
+      "workerVersion",
+      workerVersion,
     ], [
       "requestStream",
       requestStreamKey,
@@ -168,26 +174,26 @@ if (Deno.args.length === 0) {
       unflattenRedis(await redis.hgetall(workerKey)),
     );
   } else if (command === "show-worker") {
-    const workerKey = `${servicePrefix}:${arg}:h`;
+    const workerKey = `${workerClass}:${arg}:h`;
     console.log(
       `${Colors.green(workerKey)}`,
       unflattenRedis(await redis.hgetall(workerKey)),
     );
   } else if (command === "xtrim-request") {
     const elements = parseInt(arg);
-    const reply = await redis.xtrim(requestStreamKey, {
+    const _reply = await redis.xtrim(requestStreamKey, {
       elements,
     });
   } else if (command === "xtrim-response") {
     const elements = parseInt(arg);
-    const reply = await redis.xtrim(responseStreamKey, {
+    const _reply = await redis.xtrim(responseStreamKey, {
       elements,
     });
   } else if (command === "xadd-request") {
-    const id = arg;
+    const ref = arg;
     const reply = await redis.xadd(requestStreamKey, "*", {
-      id,
-      service: serviceUrl,
+      ref,
+      workerUrl,
     });
     console.log(reply);
   } else {

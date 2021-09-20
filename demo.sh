@@ -28,14 +28,14 @@ fi
 # create request stream
 if redis-cli exists deno-date-iso:req:x | grep -q ^0$
 then
-  if ! deno run --allow-net=127.0.0.1:6379 ./cli.ts create-request-stream
+  if ! deno run -A ./cli.ts create-request-stream
   then
     echo "ERR create-request-stream"
   fi
 fi
 
 # add item request stream with request id 1234
-deno run --allow-net=127.0.0.1:6379 ./cli.ts xadd-request 1234
+deno run -A ./cli.ts xadd-request 1234
 
 echo "> xrange deno-date-iso:req:x"
 redis-cli xrange deno-date-iso:req:x - +
@@ -51,12 +51,11 @@ redis-cli hmset deno-date-iso:1:h \
 redish deno-date-iso:1:h
 
 # run worker 1
-echo "# Running service"
-deno run --allow-net=127.0.0.1:6379 ./service.ts deno-date-iso:1:h
+echo "# Running worker"
+deno run --allow-net=127.0.0.1:6379 ./worker.ts deno-date-iso:1:h
 
 echo "> rpop res:1234"
 redis-cli --raw rpop res:1234
 
-echo
 echo "> xrange deno-date-iso:res:x"
 redis-cli xrange deno-date-iso:res:x - +

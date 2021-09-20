@@ -11,18 +11,18 @@ if (Deno.args.length !== 1) {
   throw new Error("Missing config key");
 }
 
-const instanceKey = Deno.args[0];
+const workerKey = Deno.args[0];
 
-if (!/:h$/.test(instanceKey)) {
+if (!/:h$/.test(workerKey)) {
   throw new Error(
-    `Expecting instance key argument with ':h' postfix: ${instanceKey}`,
+    `Expecting worker key argument with ':h' postfix: ${workerKey}`,
   );
 }
 
-const configMap = unflattenRedis(await redis.hgetall(instanceKey));
+const configMap = unflattenRedis(await redis.hgetall(workerKey));
 
 const config = {
-  serviceUrl: "https://github.com/evanx/deno-date-iso/service.ts",
+  workerUrl: "https://github.com/evanx/deno-date-iso/worker.ts",
   requestStream: configMap.get("requestStream") as string,
   responseStream: configMap.get("responseStream") as string,
   consumerId: configMap.get("consumerId") as string,
@@ -31,25 +31,25 @@ const config = {
   replyExpireSeconds: 8,
 };
 
-if (await redis.hexists(instanceKey, "pid") === 1) {
+if (await redis.hexists(workerKey, "pid") === 1) {
   throw new Error(
-    `Expecting instance hashes to have empty 'pid' field: ${instanceKey}`,
+    `Expecting instance hashes to have empty 'pid' field: ${workerKey}`,
   );
 }
 
-await redis.hset(instanceKey, ["pid", Deno.pid]);
+await redis.hset(workerKey, ["pid", Deno.pid]);
 
 let requestCount = 0;
 
 while (config.requestLimit === 0 || requestCount < config.requestLimit) {
-  if ((await redis.hget(instanceKey, "pid")) !== String(Deno.pid)) {
+  if ((await redis.hget(workerKey, "pid")) !== String(Deno.pid)) {
     throw new Error("Aborting because 'pid' field removed/changed");
   }
 
   const [reply] = await redis.xreadgroup(
     [[config.requestStream, ">"]],
     {
-      group: "service",
+      group: "worker",
       consumer: config.consumerId,
       block: config.xreadGroupBlockMillis,
       count: 1,
@@ -67,27 +67,27 @@ while (config.requestLimit === 0 || requestCount < config.requestLimit) {
   }
 
   const message = reply.messages[0];
-  const { id, service } = message.fieldValues;
+  const { ref, workerUrl } = message.fieldValues;
   let code;
   let res;
-  if (!id) {
-    await redis.hincrby(instanceKey, "err:id", 1);
+  if (!ref) {
+    await redis.hincrby(workerKey, "err:ref", 1);
     continue;
-  } else if (service !== config.serviceUrl) {
-    await redis.hincrby(instanceKey, "err:service", 1);
+  } else if (workerUrl !== config.workerUrl) {
+    await redis.hincrby(workerKey, "err:workerUrl", 1);
     code = 400;
-    res = { err: "service" };
+    res = { err: "workerUrl" };
   } else {
     code = 200;
     res = { data: new Date().toISOString() };
   }
   await redis.lpush(
-    `res:${id}`,
+    `res:${ref}`,
     JSON.stringify(Object.assign({ code }, res)),
   );
-  await redis.expire(`res:${id}`, config.replyExpireSeconds);
-  await redis.xadd(config.responseStream, "*", { id, service, code });
-  console.log(`Processed: ${id}`, res);
+  await redis.expire(`res:${ref}`, config.replyExpireSeconds);
+  await redis.xadd(config.responseStream, "*", { ref, workerUrl, code });
+  console.log(`Processed: ${ref}`, res);
 }
 
 Deno.exit(0);
