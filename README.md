@@ -22,7 +22,7 @@ Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.2/service.ts
 
 ### cli
 
-![image](https://user-images.githubusercontent.com/899558/133926057-af3cb1b3-229e-4dff-9a50-2767b300b526.png)
+![image](https://user-images.githubusercontent.com/899558/133970523-30f71676-6bb6-421c-84db-c936ba968019.png)
 
 The `cli` script is used to test the `service` e.g.:
 
@@ -37,6 +37,8 @@ The `demo.sh` shell script can be used to demonstrate the `service` script e.g. 
 ```shell
 ./demo.sh clear
 ```
+
+![image](https://user-images.githubusercontent.com/899558/133970603-0ef7353c-7a39-4760-8364-e8ee0a1f20c0.png)
 
 This script will:
 
