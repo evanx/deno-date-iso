@@ -26,9 +26,9 @@ Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.2/service.ts
 
 The `cli` script is used to test the `service` e.g.:
 
-- `create-message-stream` the stream with `service` consumer group
-- `setup-instance` to setup a service instance
-- `xadd-message` to add a request to the stream
+- `create-request-stream` - create the stream with `service` consumer group
+- `setup-worker` - setup a worker instance
+- `xadd-request` - add a request to the stream
 
 ### demo
 
