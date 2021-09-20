@@ -37,10 +37,11 @@ fi
 # add item request stream with request id 1234
 deno run --allow-net=127.0.0.1:6379 ./cli.ts xadd-request 1234
 
+echo "> xrange deno-date-iso:req:x"
 redis-cli xrange deno-date-iso:req:x - +
 
 # setup worker 1 to process only 1 request message
-echo "Worker hashes key: deno-date-iso:1:h"
+echo "# Worker hashes key: deno-date-iso:1:h"
 redis-cli del deno-date-iso:1:h | grep -q '^[0-1]$'
 redis-cli hmset deno-date-iso:1:h \
   requestStream deno-date-iso:req:x \
@@ -50,9 +51,12 @@ redis-cli hmset deno-date-iso:1:h \
 redish deno-date-iso:1:h
 
 # run worker 1
-echo "Running service"
+echo "# Running service"
 deno run --allow-net=127.0.0.1:6379 ./service.ts deno-date-iso:1:h
 
-echo "Pop response:"
+echo "> rpop res:1234"
 redis-cli --raw rpop res:1234
+
+echo
+echo "> xrange deno-date-iso:res:x"
 redis-cli xrange deno-date-iso:res:x - +

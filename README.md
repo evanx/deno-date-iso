@@ -16,7 +16,15 @@ deno run https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.1/main.ts
 
 ## service
 
-The `service` script is an experimental Redis-driven microservice approach.
+The `service` script is an experimental Redis-driven microservice approach:
+
+- the microservice requires a Redis "worker key" as a CLI parameter
+- the worker hashes provide configuration e.g. the `requestStream` key
+- the worker sets and monitors the `pid` field to control its lifecycle
+- the worker will `xreadgroup` of the `service` consumer group to processes requests
+- the worker will push the response to a single-entry "list" which will expire after a few seconds
+
+The intention is that other services can `xadd` requests, and `brpop` responses with a timeout.
 
 Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.2/service.ts
 
@@ -46,5 +54,6 @@ This script will:
 - `xadd` a request to the stream
 - setup a worker key `deno-date-iso:1:h`
 - run the worker to process the added request
+- pop the response by request ID
 
 For the demo, we set `requestLimit` to `1` and `xadd` a single request, so that the service will process that single request only and then exit.
