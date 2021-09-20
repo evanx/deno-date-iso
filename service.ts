@@ -7,75 +7,87 @@ const redis = await connect({
   port: 6379,
 });
 
-const serviceUrl = "https://github.com/evanx/deno-date-iso/service.ts";
-const replyStreamKey = "deno-date-iso:reply:x";
-
 if (Deno.args.length !== 1) {
   throw new Error("Missing config key");
 }
+
 const instanceKey = Deno.args[0];
+
 if (!/:h$/.test(instanceKey)) {
   throw new Error(
     `Expecting instance key argument with ':h' postfix: ${instanceKey}`,
   );
 }
 
-type Config = {
-  stream: string;
-  consumer: string;
-  replyExpireSeconds: number;
-};
-
 const configMap = unflattenRedis(await redis.hgetall(instanceKey));
+
 const config = {
-  stream: configMap.get("stream") as string,
-  consumer: configMap.get("consumer") as string,
+  serviceUrl: "https://github.com/evanx/deno-date-iso/service.ts",
+  requestStream: configMap.get("requestStream") as string,
+  responseStream: configMap.get("responseStream") as string,
+  consumerId: configMap.get("consumerId") as string,
+  requestLimit: parseInt(configMap.get("requestLimit") as string || "0"),
   xreadGroupBlockMillis: 2000,
   replyExpireSeconds: 8,
 };
 
+if (await redis.hexists(instanceKey, "pid") === 1) {
+  throw new Error(
+    `Expecting instance hashes to have empty 'pid' field: ${instanceKey}`,
+  );
+}
+
 await redis.hset(instanceKey, ["pid", Deno.pid]);
 
-while (true) {
+let requestCount = 0;
+
+while (config.requestLimit === 0 || requestCount < config.requestLimit) {
   if ((await redis.hget(instanceKey, "pid")) !== String(Deno.pid)) {
     throw new Error("Aborting because 'pid' field removed/changed");
   }
+
   const [reply] = await redis.xreadgroup(
-    [[config.stream, ">"]],
+    [[config.requestStream, ">"]],
     {
       group: "service",
-      consumer: config.consumer,
+      consumer: config.consumerId,
       block: config.xreadGroupBlockMillis,
       count: 1,
     },
   );
+
   if (!reply || reply.messages.length === 0) {
     continue;
   }
+
+  requestCount++;
+
   if (reply.messages.length !== 1) {
     throw new Error(`Expecting 1 message: ${reply.messages.length}`);
   }
+
   const message = reply.messages[0];
   const { id, service } = message.fieldValues;
   let code;
+  let res;
   if (!id) {
     await redis.hincrby(instanceKey, "err:id", 1);
-  } else if (service !== serviceUrl) {
-    code = 400;
+    continue;
+  } else if (service !== config.serviceUrl) {
     await redis.hincrby(instanceKey, "err:service", 1);
-    await redis.lpush(
-      `reply:${id}`,
-      JSON.stringify({ code, err: "service" }),
-    );
+    code = 400;
+    res = { err: "service" };
   } else {
     code = 200;
-    await redis.lpush(
-      `reply:${id}`,
-      JSON.stringify({ code, reply: new Date().toISOString() }),
-    );
-    await redis.expire(`reply:${id}`, config.replyExpireSeconds);
-    await redis.xadd(replyStreamKey, "*", { id, service, code });
-    console.log(`Processed: ${id}`, message);
-    await sleep(1);
+    res = { data: new Date().toISOString() };
   }
+  await redis.lpush(
+    `res:${id}`,
+    JSON.stringify(Object.assign({ code }, res)),
+  );
+  await redis.expire(`res:${id}`, config.replyExpireSeconds);
+  await redis.xadd(config.responseStream, "*", { id, service, code });
+  console.log(`Processed: ${id}`, res);
 }
+
+Deno.exit(0);
