@@ -32,19 +32,17 @@ The `cli` script is used to test the `service` e.g.:
 
 ### demo
 
-The `demo.sh` shell script can be used to demonstrate the `service` e.g. if you wish to delete the request stream if it already exists:
+The `demo.sh` shell script can be used to demonstrate the `service` script e.g. if you wish to delete the request stream if it already exists:
 
 ```shell
 ./demo.sh clear
 ```
 
-This script will setup a worker key `deno-date-iso:1:h` as follows.
+This script will:
 
-```
-requestStream: deno-date-iso:req:x
-responseStream deno-date-iso:res:x
-consumerId 1
-requestLimit 1
-```
+- create the request stream with a consumer group `service` for collaborating workers to consume via `xreadgroup`
+- `xadd` a request to the stream
+- setup a worker key `deno-date-iso:1:h`
+- run the worker to process the added request
 
-We will create the request stream with a consumer group `service` for collaborating workers to consume via `xreadgroup.` For the demo, we set `requestLimit` and `xadd` a single request, so that the service will process that single request only and then exit.
+For the demo, we set `requestLimit` to `1` and `xadd` a single request, so that the service will process that single request only and then exit.
