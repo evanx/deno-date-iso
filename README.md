@@ -38,7 +38,7 @@ The `demo.sh` shell script can be used to demonstrate the `service` script e.g. 
 ./demo.sh clear
 ```
 
-![image](https://user-images.githubusercontent.com/899558/133970603-0ef7353c-7a39-4760-8364-e8ee0a1f20c0.png)
+![image](https://user-images.githubusercontent.com/899558/133971136-c85e4a90-c355-4b43-8362-3305ce475551.png)
 
 This script will:
 
