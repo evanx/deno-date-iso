@@ -21,7 +21,7 @@ The `service` script is an experimental Redis-driven microservice approach:
 - the microservice requires a Redis "worker key" as a CLI parameter
 - the worker hashes provide configuration e.g. the `requestStream` key
 - the worker sets and monitors the `pid` field to control its lifecycle
-- the worker will `xreadgroup` of the `service` consumer group to processes requests
+- the worker will `xreadgroup` using the `service` consumer group to processes requests
 - the worker will push the response to a single-entry "list" which will expire after a few seconds
 
 The intention is that other services can `xadd` requests, and `brpop` responses with a timeout.
