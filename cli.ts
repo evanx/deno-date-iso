@@ -63,7 +63,7 @@ if (!workerRepo.endsWith("/")) {
   throw new Error(`Expecting WORKER_REPO to end with slash: ${workerRepo}`);
 }
 const workerVersion = "0.0.1";
-const workerUrl = workerRepo + workerClass + "/worker.ts";
+const workerUrl = workerRepo + workerClass + "/main/worker.ts";
 const requestStreamKey = `${workerClass}:req:x`;
 const responseStreamKey = `${workerClass}:res:x`;
 

@@ -43,7 +43,7 @@ The `cli` script can be used to setup and test a `worker` e.g.:
 The `demo.sh` shell script can be used to demonstrate the `worker` script e.g. if you wish to delete the request stream if it already exists:
 
 ```shell
-./demo.sh clear
+./demo.sh clean
 ```
 
 ![image](https://user-images.githubusercontent.com/899558/133971136-c85e4a90-c355-4b43-8362-3305ce475551.png)

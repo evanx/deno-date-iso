@@ -9,7 +9,7 @@ epoch=`deno eval 'console.log(Date.now())'`
 
 if [ ${#} -eq 1 ]
 then
-  if [ "${1}" = 'clear' ]
+  if [ "${1}" = 'reset' ]
   then
     deno run --allow-net=127.0.0.1:6379 ./cli.ts delete-request-stream ||
       echo "ERR: delete-request-stream"

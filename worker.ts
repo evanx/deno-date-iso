@@ -22,7 +22,8 @@ if (!/:h$/.test(workerKey)) {
 const configMap = unflattenRedis(await redis.hgetall(workerKey));
 
 const config = {
-  workerUrl: "https://github.com/evanx/deno-date-iso/worker.ts",
+  workerUrl:
+    "https://raw.githubusercontent.com/evanx/deno-date-iso/main/worker.ts",
   requestStream: configMap.get("requestStream") as string,
   responseStream: configMap.get("responseStream") as string,
   consumerId: configMap.get("consumerId") as string,
@@ -76,7 +77,7 @@ while (config.requestLimit === 0 || requestCount < config.requestLimit) {
   } else if (workerUrl !== config.workerUrl) {
     await redis.hincrby(workerKey, "err:workerUrl", 1);
     code = 400;
-    res = { err: "workerUrl" };
+    res = { err: "workerUrl", workerUrl };
   } else {
     code = 200;
     res = { data: new Date().toISOString() };
