@@ -20,6 +20,7 @@ The `worker` script is an experimental Redis-driven microservice approach:
 
 - the microservice requires a Redis "worker key" as a CLI parameter
 - the worker hashes provide configuration e.g. the `requestStream` key
+- an AES key is provided by `stdin` to decrypt any sensitive config e.g. account credentials
 - the worker sets and monitors the `pid` field to control its lifecycle
 - the worker will `xreadgroup` using the `worker` consumer group to processes requests
 - the worker will push the response to a single-entry "list" which will expire after a few seconds
@@ -32,11 +33,11 @@ Latest: https://raw.githubusercontent.com/evanx/deno-date-iso/v0.0.3/worker.ts
 
 ![image](https://user-images.githubusercontent.com/899558/133970523-30f71676-6bb6-421c-84db-c936ba968019.png)
 
-The `cli` script can be used to setup and test a `worker` e.g.:
+The `cli` script can be used to setup and dev/test a `worker` e.g.:
 
 - `create-request-stream` - create the stream with `worker` consumer group
 - `setup-worker` - setup a worker hashes key
-- `xadd-request` - add a request to the stream
+- `xadd-req` - add a request to the stream
 
 ### demo
 

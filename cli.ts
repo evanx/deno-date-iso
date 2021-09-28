@@ -11,12 +11,12 @@ const commands = [
     args: [],
   },
   {
-    key: "create-request-stream",
+    key: "create-req-stream",
     description: "Create the request message stream",
     args: [],
   },
   {
-    key: "delete-request-stream",
+    key: "delete-req-stream",
     description: "Delete the request message stream",
     args: [],
   },
@@ -31,27 +31,27 @@ const commands = [
     args: ["consumerId"],
   },
   {
-    key: "xadd-request",
+    key: "xadd-req",
     description: "Add a request item to the request stream",
     args: ["requestId"],
   },
   {
-    key: "xrange-request",
+    key: "xrange-req",
     description: "Show messages in the request stream",
     args: [],
   },
   {
-    key: "xtrim-request",
+    key: "xtrim-req",
     description: "Trim the request stream",
     args: ["maxlength"],
   },
   {
-    key: "xtrim-response",
+    key: "xtrim-res",
     description: "Trim the response stream",
     args: ["maxlength"],
   },
   {
-    key: "xrange-response",
+    key: "xrange-res",
     description: "Show messages in the response stream",
     args: [],
   },
@@ -84,13 +84,13 @@ if (Deno.args.length === 0) {
   const command = Deno.args[0];
   if (command === "info") {
     await info();
-  } else if (command === "delete-request-stream") {
+  } else if (command === "delete-req-stream") {
     await redis.executor.exec(
       "del",
       requestStreamKey,
     );
     Deno.exit(0);
-  } else if (command === "create-request-stream") {
+  } else if (command === "create-req-stream") {
     try {
       await redis.executor.exec(
         "xgroup",
@@ -109,13 +109,13 @@ if (Deno.args.length === 0) {
     }
   } else if (command === "show-default-setup") {
     console.log(`${Colors.cyan("streamKey")} ${requestStreamKey}`);
-  } else if (command === "xtrim-request") {
+  } else if (command === "xtrim-req") {
     console.error(`Provide arg: <maxlen>`);
-  } else if (command === "xtrim-response") {
+  } else if (command === "xtrim-res") {
     console.error(`Provide arg: <maxlen>`);
-  } else if (command === "xadd-request") {
+  } else if (command === "xadd-req") {
     console.error(`Provide arg: <ref>`);
-  } else if (command === "xrange-request") {
+  } else if (command === "xrange-req") {
     const xrangeReply = await redis.xrange(
       `${workerClass}:req:x`,
       "-",
@@ -123,7 +123,7 @@ if (Deno.args.length === 0) {
       99,
     );
     console.log(xrangeReply);
-  } else if (command === "xrange-response") {
+  } else if (command === "xrange-res") {
     const xrangeReply = await redis.xrange(
       responseStreamKey,
       "-",
@@ -179,17 +179,17 @@ if (Deno.args.length === 0) {
       `${Colors.green(workerKey)}`,
       unflattenRedis(await redis.hgetall(workerKey)),
     );
-  } else if (command === "xtrim-request") {
+  } else if (command === "xtrim-req") {
     const elements = parseInt(arg);
     const _reply = await redis.xtrim(requestStreamKey, {
       elements,
     });
-  } else if (command === "xtrim-response") {
+  } else if (command === "xtrim-res") {
     const elements = parseInt(arg);
     const _reply = await redis.xtrim(responseStreamKey, {
       elements,
     });
-  } else if (command === "xadd-request") {
+  } else if (command === "xadd-req") {
     const ref = arg;
     const reply = await redis.xadd(requestStreamKey, "*", {
       ref,
