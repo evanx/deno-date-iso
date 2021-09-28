@@ -1,6 +1,5 @@
-import { sleep } from "https://deno.land/x/sleep/mod.ts";
-import { connect, Redis } from "https://deno.land/x/redis/mod.ts";
-import { unflattenRedis } from "./utils.ts";
+import { connect } from "https://deno.land/x/redis/mod.ts";
+import { decryptStream, unflattenRedis } from "./utils.ts";
 
 const redis = await connect({
   hostname: "127.0.0.1",
@@ -20,16 +19,22 @@ if (!/:h$/.test(workerKey)) {
 }
 
 const configMap = unflattenRedis(await redis.hgetall(workerKey));
-
 const config = {
   workerUrl: "https://raw.githubusercontent.com/evanx/deno-date-iso/",
   requestStream: configMap.get("requestStream") as string,
   responseStream: configMap.get("responseStream") as string,
   consumerId: configMap.get("consumerId") as string,
   requestLimit: parseInt(configMap.get("requestLimit") as string || "0"),
+  encryptedIv: configMap.get("encryptedIv") as string,
+  encryptedAlg: configMap.get("encryptedAlg") as string,
+  encrypted: configMap.get("encrypted") as string,
   xreadGroupBlockMillis: 2000,
   replyExpireSeconds: 8,
 };
+
+const secretConfig = JSON.parse(
+  await decryptStream(config.encryptedIv, config.encrypted),
+); // shared secret of related instances
 
 if (await redis.hexists(workerKey, "pid") === 1) {
   throw new Error(
@@ -76,7 +81,7 @@ while (config.requestLimit === 0 || requestCount < config.requestLimit) {
   } else if (!workerUrl.startsWith(config.workerUrl)) {
     await redis.hincrby(workerKey, "err:workerUrl", 1);
     code = 400;
-    res = { err: "workerUrl", workerUrl };
+    res = { err: "workerUrl", workerUrl, allowPrefix: config.workerUrl };
   } else {
     code = 200;
     res = { data: new Date().toISOString() };
@@ -86,7 +91,11 @@ while (config.requestLimit === 0 || requestCount < config.requestLimit) {
     JSON.stringify(Object.assign({ code }, res)),
   );
   await redis.expire(`res:${ref}`, config.replyExpireSeconds);
-  await redis.xadd(config.responseStream, "*", { ref, workerUrl, code });
+  await redis.xadd(config.responseStream, "*", {
+    ref,
+    workerUrl,
+    code,
+  });
   console.log(`Processed: ${ref}`, res);
 }
 
